@@ -46,7 +46,7 @@ MAG_OUT_Z_16 = 0x0C
 
 ACC_OUT_X_16 = 0x28
 ACC_OUT_Y_16 = 0x2A
-ACC_OUT_Z_16 = 0x2D
+ACC_OUT_Z_16 = 0x2C
 
 def readWord(addr, cmd):
   # dSet = bus.read_i2c_block_data(addr, cmd)
