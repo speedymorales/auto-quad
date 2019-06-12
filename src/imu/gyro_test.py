@@ -62,7 +62,7 @@ init()
 
 while True:
   # sleep(0.02)
-  sleep(1)
+  # sleep(1)
 
   status = bus.read_byte_data(DEVICE_ADDRESS, STATUS_REG)
   # print("{0:b}".format(status))
