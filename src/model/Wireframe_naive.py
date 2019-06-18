@@ -1,3 +1,6 @@
+import numpy as np
+import Quaternion_naive as quat
+
 # Node stores each point of the block
 class Node:
     def __init__(self, coordinates, color):
@@ -12,12 +15,13 @@ class Face:
         self.nodeIndexes = nodes
         self.color = color
 
-# Wireframe stores the details of the block
+# Wireframe stores the details of a block
 class Wireframe:
     def __init__(self):
         self.nodes = []
         self.edges = []
         self.faces = []
+        self.quaternion = quat.Quaternion()
 
     def addNodes(self, nodeList, colorList):
         for node, color in zip(nodeList, colorList):
@@ -26,6 +30,20 @@ class Wireframe:
     def addFaces(self, faceList, colorList):
         for indexes, color in zip(faceList, colorList):
             self.faces.append(Face(indexes, color))
+
+    def quatRotate(self, w, dt):
+        self.quaternion.rotate(w, dt)
+
+    def rotatePoint(self, point):
+        rotationMat = quat.getRotMat(self.quaternion.q)
+        return np.matmul(rotationMat, point)
+
+    def convertToComputerFrame(self, point):
+        computerFrameChangeMatrix = np.array([[-1, 0, 0], [0, 0, -1], [0, -1, 0]])
+        return np.matmul(computerFrameChangeMatrix, point)
+
+    def getAttitude(self):
+        return quat.getEulerAngles(self.quaternion.q)
 
     def outputNodes(self):
         print("\n --- Nodes --- ")

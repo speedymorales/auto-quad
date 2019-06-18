@@ -1,6 +1,7 @@
-import Wireframe as wf
+import Wireframe_naive as wf
 import pygame
 from operator import itemgetter
+import readSensor_naive as rs
 
 class ProjectionViewer:
     """ Displays 3D objects on a Pygame screen """
@@ -13,17 +14,37 @@ class ProjectionViewer:
         self.background = (10,10,50)
         self.clock = pygame.time.Clock()
         pygame.font.init()
-        self.font = pygame.font.SysFont('Comic Sans MS', 20)
+        self.font = pygame.font.SysFont('Comic Sans MS', 30)
 
-    def run(self):
+    def run(self, sensorInstance):
         """ Create a pygame screen until it is closed. """
         running = True
         loopRate = 50
         while running:
+            pressed = pygame.key.get_pressed()
+        
+            alt_held = pressed[pygame.K_LALT] or pressed[pygame.K_RALT]
+            ctrl_held = pressed[pygame.K_LCTRL] or pressed[pygame.K_RCTRL]
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_w and ctrl_held:
+                        running = False
+                    if event.key == pygame.K_F4 and alt_held:
+                        running = False
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    sensorInstance.close()
             self.clock.tick(loopRate)
+            data = sensorInstance.getSerialData()
+            angularVeloctiy = [data[0], data[1], data[2]]
+            self.wireframe.quatRotate(angularVeloctiy, 1/loopRate)
             self.display()
             pygame.display.flip()
 
@@ -32,7 +53,7 @@ class ProjectionViewer:
         self.screen.fill(self.background)
 
         # Get the current attitude
-        yaw, pitch, roll = (0, 0, 0)
+        yaw, pitch, roll = self.wireframe.getAttitude()
         self.messageDisplay("Yaw: %.1f" % yaw,
                             self.screen.get_width()*0.75,
                             self.screen.get_height()*0,
@@ -51,15 +72,17 @@ class ProjectionViewer:
         pvNodes = []
         pvDepth = []
         for node in self.wireframe.nodes:
-            pvNodes.append(self.projectOthorgraphic(node.x , node.y, node.z,
-                                              self.screen.get_width(), self.screen.get_height(),
-                                              70, pvDepth))
+            point = [node.x, node.y, node.z]
+            newCoord = self.wireframe.rotatePoint(point)
+            comFrameCoord = self.wireframe.convertToComputerFrame(newCoord)
+            pvNodes.append(self.projectOthorgraphic(comFrameCoord[0], comFrameCoord[1], comFrameCoord[2],
+                                                    self.screen.get_width(), self.screen.get_height(),
+                                                    70, pvDepth))
             """
-            pvNodes.append(self.projectOnePointPerspective(node.x , node.y, node.z,
+            pvNodes.append(self.projectOnePointPerspective(comFrameCoord[0], comFrameCoord[1], comFrameCoord[2],
                                                            self.screen.get_width(), self.screen.get_height(),
                                                            5, 10, 30, pvDepth))
             """
-            pvDepth.append(node.z)
 
         # Calculate the average Z values of each face.
         avg_z = []
@@ -85,9 +108,9 @@ class ProjectionViewer:
         xPrime = x
         yPrime = -y
         zPrime = -z
-        xProjected = xPrime * (S / (zPrime + P)) * scaling_constant + win_width / 2
-        yProjected = yPrime * (S / (zPrime + P)) * scaling_constant + win_height / 2
-        pvDepth.append(1 / (zPrime + P))
+        xProjected = xPrime * (S/(zPrime+P)) * scaling_constant + win_width / 2
+        yProjected = yPrime * (S/(zPrime+P)) * scaling_constant + win_height / 2
+        pvDepth.append(1/(zPrime+P))
         return (round(xProjected), round(yProjected))
 
     # Normal Projection
@@ -111,7 +134,7 @@ class ProjectionViewer:
         textRect.topleft = (x, y)
         self.screen.blit(textSurface, textRect)
 
-def initializeBlock():
+def initializeCube():
     block = wf.Wireframe()
 
     block_nodes = [(x, y, z) for x in (-1.5, 1.5) for y in (-1, 1) for z in (-0.1, 0.1)]
@@ -128,6 +151,14 @@ def initializeBlock():
 
 
 if __name__ == '__main__':
-    block = initializeBlock()
-    pv = ProjectionViewer(640, 480, block)
-    pv.run()
+    portName = '/dev/ttyUSB0'
+    # portName = 'COM6'
+    baudRate = 115200
+    dataNumBytes = 2  # number of bytes of 1 data point
+    numParams = 9  # number of plots in 1 graph
+    s = rs.SerialRead(portName, baudRate, dataNumBytes, numParams)  # initializes all required variables
+    s.readSerialStart()  # starts background thread
+
+    block = initializeCube()
+    pv = ProjectionViewer(1280, 960, block)
+    pv.run(s)
