@@ -1,0 +1,32 @@
+#!/usr/bin/python3           # This is server.py file
+import socket
+import sys
+import netifaces as ni
+
+# create a socket object
+serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+# get local machine name
+# host = '127.0.0.1' #socket.gethostname()
+
+# ni.ifaddresses('wlan0')
+host = ni.ifaddresses('wlan0')[ni.AF_INET][0]['addr']
+
+port = 9999
+
+# bind to the port
+serversocket.bind((host, port))
+
+# queue up to 5 requests
+serversocket.listen(5)
+
+while True:
+   # establish a connection
+   clientsocket,addr = serversocket.accept()
+
+   print("Got a connection from %s" % str(addr))
+   sys.stdout.flush()
+    
+   msg = 'Thank you for connecting'+ "\r\n"
+   clientsocket.send(msg.encode('ascii'))
+   clientsocket.close()
