@@ -3,6 +3,7 @@
 import socket
 import struct
 import sys
+import time
 
 # create a socket object
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -20,28 +21,27 @@ port = 9999
 # connection to hostname on the port.
 s.connect((host, port))
 
-# Receive no more than 1024 bytes
-msg = s.recv(6)
-print([ "0x%02x" % b for b in msg ])
-# sys.stdout.flush()
+while True:
+  # Receive 6 bytes
+  msg = s.recv(6)
+  # print([ "0x%02x" % b for b in msg ])
 
-header = msg[0:4].decode()
-print(header)
+  header = msg[0:4].decode()
+  # print(header)
 
-if header == 'DATA':
-  size = struct.unpack('H', msg[4:6])[0]
-  print(size)
-  msg = s.recv(size)
-  print([ "0x%02x" % b for b in msg ])
+  sys.stdout.flush()
 
-  for i in range(0, int(size/8)):
-    print(struct.unpack('d', msg[i*8: i*8+8])[0])
+  if header == 'DATA':
+    size = struct.unpack('H', msg[4:6])[0]
+    print('----------')
+    # print(size)
+    msg = s.recv(size)
+    # print([ "0x%02x" % b for b in msg ])
 
-  # print([ "0x%02x" % b for b in msg[0:8] ])
-  # print(struct.unpack("d", msg[0:8])[0])
+    for i in range(0, int(size/8)):
+      print(struct.unpack('d', msg[i*8: i*8+8])[0])
+  
+  sys.stdout.flush()
 
-  # print([ "0x%02x" % b for b in msg[8:16] ])
-  # print(struct.unpack("d", msg[8:16])[0])
-
-  s.close()
-  # print (msg.decode('ascii'))
+  # time.sleep(1)
+s.close()

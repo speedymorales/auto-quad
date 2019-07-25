@@ -1,7 +1,8 @@
 import Wireframe_naive as wf
 import pygame
 from operator import itemgetter
-import readSensor_naive as rs
+# import readSensor_naive as rs
+import readSocket_naive as rs
 
 class ProjectionViewer:
     """ Displays 3D objects on a Pygame screen """
@@ -151,13 +152,13 @@ def initializeCube():
 
 
 if __name__ == '__main__':
-    portName = '/dev/ttyUSB0'
+    # portName = '/dev/ttyUSB0'
     # portName = 'COM6'
-    baudRate = 115200
-    dataNumBytes = 2  # number of bytes of 1 data point
-    numParams = 9  # number of plots in 1 graph
-    s = rs.SerialRead(portName, baudRate, dataNumBytes, numParams)  # initializes all required variables
-    s.readSerialStart()  # starts background thread
+    # baudRate = 115200
+    # dataNumBytes = 2  # number of bytes of 1 data point
+    # numParams = 9  # number of plots in 1 graph
+    s = rs.SocketRead('proxy.jlmo.info', 9999)
+    s.readSocketStart()  # starts background thread
 
     block = initializeCube()
     pv = ProjectionViewer(1280, 960, block)

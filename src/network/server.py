@@ -3,6 +3,8 @@ import socket
 import sys
 import netifaces as ni
 import struct
+import time
+from threading import Thread
 
 # create a socket object
 serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -29,23 +31,27 @@ while True:
 
    print("Got a connection from %s" % str(addr))
    
-   msg = 'Thank you for connecting'+ "\r\n"
-   msg = bytearray()
-   msg.extend('DATA'.encode())
+   # for i in range(0, 5):
+   while True:
+      msg = bytearray()
+      msg.extend('DATA'.encode())
 
-   value = [float(5.10001), float(600.0), float(123.45), float(100), float(0), float(1.1), float(24.25), float(0.001), float(1.112)]
+      rawData = [float(5.10001), float(600.0), float(123.45), float(100), float(0), float(1.1), float(24.25), float(0.001), float(1.112)]
 
-   datagram = b''
-   for f in value:
-      datagram = datagram + struct.pack("d", f)
+      datagram = bytearray()
+      for f in rawData:
+         datagram = datagram + struct.pack("d", f)
+      
+      # print([ "0x%02x" % b for b in datagram ])
+      # print(len(datagram))
+
+      msg = msg + struct.pack('H', len(datagram))
+      msg = msg + datagram
+      clientsocket.send(msg)
+      print("Message Sent to " + str(addr))
+
+      sys.stdout.flush()
+
+      time.sleep(.2)
    
-   print([ "0x%02x" % b for b in datagram ])
-   print(len(datagram))
-
-   msg = msg + struct.pack('H', len(datagram))
-   msg = msg + datagram
-
-   clientsocket.send(msg)
-
-   sys.stdout.flush()
    clientsocket.close()
